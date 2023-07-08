@@ -8,6 +8,8 @@ public class FirstPersonController : MonoBehaviour
     private bool ShouldJump => Input.GetKeyDown(KeyCode.Space) && characterController.isGrounded;
     private bool ShouldCrouch => Input.GetKeyDown(KeyCode.LeftControl) && !isDuringCrouchAnimation && characterController.isGrounded;
 
+    private KeyCode mouseRightButton = KeyCode.Mouse1;
+
     [Header("Move Parameters")]
     [SerializeField] private float walkSpeed = 3f;
     [SerializeField] private float sprintSpeed = 6f;
@@ -23,6 +25,12 @@ public class FirstPersonController : MonoBehaviour
     [SerializeField, Range(1, 10)] private float mouseSensitivityY = 3f;
     [SerializeField] private bool invertAxisY;
     private float rotationX;
+
+    [Header("Zoom Parameters")]
+    [SerializeField] private float timeToZoom = 0.3f;
+    [SerializeField] private float zoomFOV = 30;
+    private float defaultFOV;
+    private Coroutine zoomCoroutine;
 
     [Header("Jump Parameters")]
     [SerializeField] private float gravity = 30f;
@@ -77,6 +85,7 @@ public class FirstPersonController : MonoBehaviour
         characterController = gameObject.GetComponent<CharacterController>();
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+        defaultFOV = playerCamera.fieldOfView;
     }
 
     private void Start()
@@ -93,6 +102,7 @@ public class FirstPersonController : MonoBehaviour
         HandleJump();
         HandleCrouch();
         HandleHeadBob();
+        HandleZoom();
 
         ApplyMovements();
     }
@@ -179,6 +189,48 @@ public class FirstPersonController : MonoBehaviour
                 defaultYPos + (Mathf.Sin(bobTimer) * bobAmount),
                 playerCameraT.localPosition.z);
         }
+    }
+
+    private void HandleZoom()
+    {
+        if (Input.GetKeyDown(mouseRightButton))
+        {
+            if (zoomCoroutine != null)
+            {
+                StopCoroutine(zoomCoroutine);
+                zoomCoroutine = null;
+            }
+
+            zoomCoroutine = StartCoroutine(ToggleZoom(true));
+        }
+
+        if (Input.GetKeyUp(mouseRightButton))
+        {
+            if (zoomCoroutine != null)
+            {
+                StopCoroutine(zoomCoroutine);
+                zoomCoroutine = null;
+            }
+
+            zoomCoroutine = StartCoroutine(ToggleZoom(false));
+        }
+    }
+
+    private IEnumerator ToggleZoom(bool zoomIn)
+    {
+        float targetFOV = zoomIn ? zoomFOV : defaultFOV;
+        float startingFOV = playerCamera.fieldOfView;
+        float elapsedTime = 0;
+
+        while (elapsedTime < timeToZoom)
+        {
+            playerCamera.fieldOfView = Mathf.Lerp(startingFOV, targetFOV, elapsedTime / timeToZoom);
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
+
+        playerCamera.fieldOfView = targetFOV;
+        zoomCoroutine = null;
     }
 
     private void ApplyMovements()

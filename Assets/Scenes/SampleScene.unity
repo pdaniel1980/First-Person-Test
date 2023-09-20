@@ -845,6 +845,8 @@ MonoBehaviour:
   mouseSensitivityX: 3
   mouseSensitivityY: 3
   invertAxisY: 1
+  timeToZoom: 0.3
+  zoomFOV: 30
   gravity: 30
   jumpForce: 8
   crouchedHeight: 0.5
